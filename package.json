@@ -1,0 +1,27 @@
+{
+  "name": "stock-sentiment-analyzer",
+  "version": "1.0.0",
+  "description": "AI-Powered Stock Sentiment Analyzer for Indian Market",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"pnpm run server\" \"pnpm run client\"",
+    "server": "cd server && pnpm run dev",
+    "client": "cd client && pnpm start",
+    "build": "cd client && pnpm run build",
+    "install-all": "pnpm install && cd server && pnpm install && cd ../client && pnpm install",
+    "test": "jest",
+    "start": "cd server && pnpm start"
+  },
+  "keywords": [
+    "stock",
+    "sentiment",
+    "analysis",
+    "indian-market",
+    "ai"
+  ],
+  "author": "Tushar Singh",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
