@@ -11,6 +11,7 @@ function App() {
   const [currentView, setCurrentView] = useState("search"); // 'search', 'stock', 'sentiment'
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [favoritesRefreshTrigger, setFavoritesRefreshTrigger] = useState(0);
 
   // Check for existing authentication on app load
   useEffect(() => {
@@ -54,6 +55,52 @@ function App() {
     setCurrentView("stock");
   };
 
+  const handleAddFavorite = async (ticker, name) => {
+    if (!user) return;
+
+    try {
+      const mutation = `
+        mutation AddFavorite($ticker: String!, $name: String) {
+          addFavorite(ticker: $ticker, name: $name) {
+            success
+            message
+            favorites {
+              ticker
+              name
+              addedAt
+            }
+          }
+        }
+      `;
+
+      const response = await fetch("/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+        body: JSON.stringify({
+          query: mutation,
+          variables: { ticker, name },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.errors) {
+        throw new Error(result.errors[0].message);
+      }
+
+      if (result.data.addFavorite.success) {
+        // Trigger favorites refresh in the sidebar
+        setFavoritesRefreshTrigger((prev) => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error adding favorite:", error);
+      throw error; // Re-throw to let the component handle the error
+    }
+  };
+
   const renderMainContent = () => {
     switch (currentView) {
       case "stock":
@@ -62,6 +109,10 @@ function App() {
             stock={selectedStock}
             onBackToSearch={handleBackToSearch}
             onViewSentiment={handleViewSentiment}
+            onAddFavorite={handleAddFavorite}
+            onFavoritesChange={() =>
+              setFavoritesRefreshTrigger((prev) => prev + 1)
+            }
             isLoading={isLoading}
             setIsLoading={setIsLoading}
             user={user}
@@ -113,6 +164,7 @@ function App() {
           <div className="lg:col-span-1">
             <FavoritesPanel
               user={user}
+              refreshTrigger={favoritesRefreshTrigger}
               onStockSelect={(ticker) => {
                 // Find stock data and select it
                 setSelectedStock({ ticker });

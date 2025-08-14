@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./FavoritesPanel.css";
 
-const FavoritesPanel = ({ user, onStockSelect }) => {
+const FavoritesPanel = ({ user, onStockSelect, refreshTrigger }) => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -51,6 +51,13 @@ const FavoritesPanel = ({ user, onStockSelect }) => {
       fetchFavorites();
     }
   }, [user, fetchFavorites]);
+
+  // Refresh favorites when refreshTrigger changes
+  useEffect(() => {
+    if (user && refreshTrigger > 0) {
+      fetchFavorites();
+    }
+  }, [refreshTrigger, user, fetchFavorites]);
 
   const removeFavorite = async (ticker) => {
     try {
