@@ -1,9 +1,11 @@
 const Stock = require("../models/Stock");
 const { getCache, setCache } = require("../config/redis");
 const SentimentService = require("../services/sentimentService");
+const PriceService = require("../services/priceService");
 const authService = require("../services/authService");
 
 const sentimentService = new SentimentService();
+const priceService = new PriceService();
 
 const resolvers = {
   Date: {
@@ -181,6 +183,72 @@ const resolvers = {
         console.error("Error in getSentimentHistory:", error);
         throw new Error(
           `Failed to get sentiment history for ${ticker}: ${error.message}`
+        );
+      }
+    },
+
+    // Get price trend for a stock
+    getPriceTrend: async (_, { ticker, dateRange }) => {
+      try {
+        // Check cache first
+        const cacheKey = `price_trend:${ticker}:${JSON.stringify(dateRange)}`;
+        const cached = await getCache(cacheKey);
+
+        if (cached) {
+          console.log("Returning cached price trend");
+          return cached;
+        }
+
+        // Validate ticker exists
+        const stock = await Stock.findOne({ ticker: ticker.toUpperCase() });
+        if (!stock) {
+          throw new Error(`Stock with ticker ${ticker} not found`);
+        }
+
+        // Get price trend
+        const priceResult = await priceService.getPriceTrend(ticker, dateRange);
+
+        // Cache the result for 24 hours (price data changes less frequently)
+        await setCache(cacheKey, priceResult, 86400);
+
+        return priceResult;
+      } catch (error) {
+        console.error("Error in getPriceTrend:", error);
+        throw new Error(
+          `Failed to get price trend for ${ticker}: ${error.message}`
+        );
+      }
+    },
+
+    // Get stock price for a specific period
+    getStockPrice: async (_, { ticker, period = "1mo" }) => {
+      try {
+        // Check cache first
+        const cacheKey = `stock_price:${ticker}:${period}`;
+        const cached = await getCache(cacheKey);
+
+        if (cached) {
+          console.log("Returning cached stock price");
+          return cached;
+        }
+
+        // Validate ticker exists
+        const stock = await Stock.findOne({ ticker: ticker.toUpperCase() });
+        if (!stock) {
+          throw new Error(`Stock with ticker ${ticker} not found`);
+        }
+
+        // Get stock price
+        const priceResult = await priceService.getStockPrice(ticker, period);
+
+        // Cache the result for 24 hours
+        await setCache(cacheKey, priceResult, 86400);
+
+        return priceResult;
+      } catch (error) {
+        console.error("Error in getStockPrice:", error);
+        throw new Error(
+          `Failed to get stock price for ${ticker}: ${error.message}`
         );
       }
     },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 const SentimentDashboard = ({ ticker, onBack }) => {
@@ -6,11 +6,7 @@ const SentimentDashboard = ({ ticker, onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchSentimentData();
-  }, [ticker]);
-
-  const fetchSentimentData = async () => {
+  const fetchSentimentData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -88,7 +84,11 @@ const SentimentDashboard = ({ ticker, onBack }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [ticker]);
+
+  useEffect(() => {
+    fetchSentimentData();
+  }, [ticker, fetchSentimentData]);
 
   const getSentimentColor = (label) => {
     switch (label) {

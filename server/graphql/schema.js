@@ -58,6 +58,34 @@ const typeDefs = gql`
     neutralPercentage: Float!
   }
 
+  # Price Data Types
+  type PriceDataPoint {
+    date: String!
+    open: Float!
+    high: Float!
+    low: Float!
+    close: Float!
+    volume: Int!
+    dailyReturn: Float!
+  }
+
+  type PriceSummary {
+    currentPrice: Float!
+    startPrice: Float!
+    totalReturn: Float!
+    highestPrice: Float!
+    lowestPrice: Float!
+    daysAnalyzed: Int!
+  }
+
+  type PriceTrend {
+    ticker: String!
+    period: String!
+    data: [PriceDataPoint!]!
+    summary: PriceSummary!
+    lastUpdated: String!
+  }
+
   # User and Authentication Types
   type User {
     id: ID!
@@ -94,6 +122,10 @@ const typeDefs = gql`
     # Sentiment Analysis
     getSentiment(ticker: String!, dateRange: DateRangeInput): SentimentResult!
     getSentimentHistory(ticker: String!, days: Int = 7): [SentimentResult!]!
+
+    # Price Data
+    getPriceTrend(ticker: String!, dateRange: DateRangeInput): PriceTrend!
+    getStockPrice(ticker: String!, period: String = "1mo"): PriceTrend!
 
     # User and Favorites
     me: User
