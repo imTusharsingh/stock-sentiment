@@ -1,10 +1,26 @@
 const Stock = require("../models/Stock");
 const { getCache, setCache } = require("../config/redis");
 const SentimentService = require("../services/sentimentService");
+const authService = require("../services/authService");
 
 const sentimentService = new SentimentService();
 
 const resolvers = {
+  Date: {
+    __serialize(value) {
+      return value instanceof Date ? value.toISOString() : value;
+    },
+    __parseValue(value) {
+      return new Date(value);
+    },
+    __parseLiteral(ast) {
+      if (ast.kind === "StringValue") {
+        return new Date(ast.value);
+      }
+      return null;
+    },
+  },
+
   Query: {
     // Health check
     health: () => "OK",
@@ -166,6 +182,93 @@ const resolvers = {
         throw new Error(
           `Failed to get sentiment history for ${ticker}: ${error.message}`
         );
+      }
+    },
+
+    // Get current user
+    me: async (_, __, { user }) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+      return user;
+    },
+
+    // Get user favorites
+    getFavorites: async (_, __, { user }) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+      return user.favorites;
+    },
+  },
+
+  Mutation: {
+    // User registration
+    register: async (_, { input }) => {
+      try {
+        const { email, password, name } = input;
+
+        // Validate input
+        if (!email || !password || !name) {
+          throw new Error("All fields are required");
+        }
+
+        if (password.length < 6) {
+          throw new Error("Password must be at least 6 characters long");
+        }
+
+        const result = await authService.register(input);
+        return result;
+      } catch (error) {
+        console.error("Error in register:", error);
+        throw new Error(error.message);
+      }
+    },
+
+    // User login
+    login: async (_, { input }) => {
+      try {
+        const { email, password } = input;
+
+        if (!email || !password) {
+          throw new Error("Email and password are required");
+        }
+
+        const result = await authService.login(email, password);
+        return result;
+      } catch (error) {
+        console.error("Error in login:", error);
+        throw new Error(error.message);
+      }
+    },
+
+    // Add favorite stock
+    addFavorite: async (_, { ticker, name }, { user }) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        const result = await authService.addFavorite(user.id, ticker, name);
+        return result;
+      } catch (error) {
+        console.error("Error in addFavorite:", error);
+        throw new Error(error.message);
+      }
+    },
+
+    // Remove favorite stock
+    removeFavorite: async (_, { ticker }, { user }) => {
+      if (!user) {
+        throw new Error("Authentication required");
+      }
+
+      try {
+        const result = await authService.removeFavorite(user.id, ticker);
+        return result;
+      } catch (error) {
+        console.error("Error in removeFavorite:", error);
+        throw new Error(error.message);
       }
     },
   },

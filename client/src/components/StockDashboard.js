@@ -1,6 +1,134 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
-const StockDashboard = ({ stock, onBackToSearch, onViewSentiment }) => {
+const StockDashboard = ({ stock, onBackToSearch, onViewSentiment, user }) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const fetchFavorites = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const query = `
+        query GetFavorites {
+          getFavorites {
+            ticker
+            name
+            addedAt
+          }
+        }
+      `;
+
+      const response = await fetch("/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      const result = await response.json();
+
+      if (result.errors) {
+        throw new Error(result.errors[0].message);
+      }
+
+      const userFavorites = result.data.getFavorites;
+      setIsFavorite(userFavorites.some((fav) => fav.ticker === stock.ticker));
+    } catch (error) {
+      console.error("Error fetching favorites:", error);
+    }
+  }, [user, stock.ticker]);
+
+  // Check if stock is in favorites
+  useEffect(() => {
+    if (user) {
+      fetchFavorites();
+    }
+  }, [user, stock.ticker, fetchFavorites]);
+
+  const toggleFavorite = async () => {
+    if (!user) return;
+
+    try {
+      if (isFavorite) {
+        // Remove from favorites
+        const mutation = `
+          mutation RemoveFavorite($ticker: String!) {
+            removeFavorite(ticker: $ticker) {
+              success
+              message
+              favorites {
+                ticker
+                name
+                addedAt
+              }
+            }
+          }
+        `;
+
+        const response = await fetch("/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          body: JSON.stringify({
+            query: mutation,
+            variables: { ticker: stock.ticker },
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.errors) {
+          throw new Error(result.errors[0].message);
+        }
+
+        if (result.data.removeFavorite.success) {
+          setIsFavorite(false);
+        }
+      } else {
+        // Add to favorites
+        const mutation = `
+          mutation AddFavorite($ticker: String!, $name: String) {
+            addFavorite(ticker: $ticker, name: $name) {
+              success
+              message
+              favorites {
+                ticker
+                name
+                addedAt
+              }
+            }
+          }
+        `;
+
+        const response = await fetch("/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          body: JSON.stringify({
+            query: mutation,
+            variables: { ticker: stock.ticker, name: stock.name },
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.errors) {
+          throw new Error(result.errors[0].message);
+        }
+
+        if (result.data.addFavorite.success) {
+          setIsFavorite(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  };
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header with back button */}
@@ -26,6 +154,24 @@ const StockDashboard = ({ stock, onBackToSearch, onViewSentiment }) => {
         </button>
 
         <div className="text-right">
+          <div className="flex items-center justify-end space-x-3 mb-2">
+            {user && (
+              <button
+                onClick={toggleFavorite}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  isFavorite
+                    ? "bg-red-100 text-red-700 hover:bg-red-200"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                title={
+                  isFavorite ? "Remove from favorites" : "Add to favorites"
+                }
+              >
+                {isFavorite ? "❤️" : "🤍"}{" "}
+                {isFavorite ? "Favorited" : "Add to Favorites"}
+              </button>
+            )}
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">{stock.ticker}</h1>
           <p className="text-lg text-gray-600">{stock.name}</p>
         </div>

@@ -1,14 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StockSearch from "./components/StockSearch";
 import StockDashboard from "./components/StockDashboard";
 import SentimentDashboard from "./components/SentimentDashboard";
 import Header from "./components/Header";
+import FavoritesPanel from "./components/FavoritesPanel";
 import "./App.css";
 
 function App() {
   const [selectedStock, setSelectedStock] = useState(null);
   const [currentView, setCurrentView] = useState("search"); // 'search', 'stock', 'sentiment'
   const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Check for existing authentication on app load
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const userData = localStorage.getItem("user");
+
+    if (token && userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+      }
+    }
+  }, []);
+
+  const handleAuthSuccess = (authData) => {
+    setUser(authData.user);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
 
   const handleStockSelect = (stock) => {
     setSelectedStock(stock);
@@ -38,6 +64,7 @@ function App() {
             onViewSentiment={handleViewSentiment}
             isLoading={isLoading}
             setIsLoading={setIsLoading}
+            user={user}
           />
         );
       case "sentiment":
@@ -71,9 +98,30 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <Header
+        user={user}
+        onAuthSuccess={handleAuthSuccess}
+        onLogout={handleLogout}
+      />
 
-      <main className="container mx-auto px-4 py-8">{renderMainContent()}</main>
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Main content area */}
+          <div className="lg:col-span-3">{renderMainContent()}</div>
+
+          {/* Sidebar with favorites */}
+          <div className="lg:col-span-1">
+            <FavoritesPanel
+              user={user}
+              onStockSelect={(ticker) => {
+                // Find stock data and select it
+                setSelectedStock({ ticker });
+                setCurrentView("stock");
+              }}
+            />
+          </div>
+        </div>
+      </main>
 
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
