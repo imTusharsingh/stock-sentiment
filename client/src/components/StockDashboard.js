@@ -5,6 +5,7 @@ const StockDashboard = ({
   stock,
   onBackToSearch,
   onViewSentiment,
+  onViewVisualization,
   onAddFavorite,
   onFavoritesChange,
   isLoading,
@@ -472,12 +473,20 @@ const StockDashboard = ({
               Analyze news sentiment and get AI-powered insights for{" "}
               {stock.ticker}
             </p>
-            <button
-              onClick={() => onViewSentiment(stock.ticker)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              📊 View Sentiment Analysis
-            </button>
+            <div className="flex space-x-4 justify-center">
+              <button
+                onClick={() => onViewSentiment(stock.ticker)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                📊 View Sentiment Analysis
+              </button>
+              <button
+                onClick={onViewVisualization}
+                className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                📈 View Visualizations
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
@@ -503,18 +512,18 @@ const StockDashboard = ({
           </div>
         </div>
 
-        {/* Coming Soon Features */}
+        {/* Available Features */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Coming Soon
+            Available Features
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
               <div className="text-2xl">📊</div>
               <div>
-                <h4 className="font-medium text-gray-900">Charts & Visuals</h4>
-                <p className="text-sm text-gray-600">
-                  Interactive charts & word clouds
+                <h4 className="font-medium text-green-900">Charts & Visuals</h4>
+                <p className="text-sm text-green-600">
+                  Interactive charts & word clouds ✅
                 </p>
               </div>
             </div>
