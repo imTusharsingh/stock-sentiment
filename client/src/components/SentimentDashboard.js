@@ -1,62 +1,94 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const SentimentDashboard = ({ ticker, onBack }) => {
   const [sentimentData, setSentimentData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Mock data for development (remove when API is ready)
-    const mockSentimentData = {
-      ticker: ticker,
-      overallSentiment: {
-        label: "positive",
-        score: 0.75,
-        confidence: 0.85,
-      },
-      articles: [
-        {
-          title: `${ticker} Reports Strong Q3 Results`,
-          description:
-            "Company exceeds analyst expectations with 25% revenue growth",
-          url: "#",
-          publishedAt: "2024-01-15T10:00:00Z",
-          source: "Financial Express",
-          sentiment: { label: "positive", score: 0.85, confidence: 0.9 },
-        },
-        {
-          title: `${ticker} Expands Operations in South India`,
-          description: "Strategic move to capture growing market opportunities",
-          url: "#",
-          publishedAt: "2024-01-14T15:30:00Z",
-          source: "Business Standard",
-          sentiment: { label: "positive", score: 0.7, confidence: 0.8 },
-        },
-        {
-          title: `${ticker} Faces Supply Chain Challenges`,
-          description: "Company working to resolve temporary disruptions",
-          url: "#",
-          publishedAt: "2024-01-13T09:15:00Z",
-          source: "Economic Times",
-          sentiment: { label: "negative", score: 0.3, confidence: 0.75 },
-        },
-      ],
-      totalArticles: 3,
-      sentimentBreakdown: {
-        positive: 2,
-        negative: 1,
-        neutral: 0,
-        positivePercentage: 66.7,
-        negativePercentage: 33.3,
-        neutralPercentage: 0,
-      },
-      lastUpdated: new Date().toISOString(),
-    };
-
-    // For now, use mock data
-    setSentimentData(mockSentimentData);
-
-    // TODO: Replace with actual API call
-    // fetchSentimentData();
+    fetchSentimentData();
   }, [ticker]);
+
+  const fetchSentimentData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await axios.post("/graphql", {
+        query: `
+          query GetSentiment($ticker: String!) {
+            getSentiment(ticker: $ticker) {
+              ticker
+              overallSentiment {
+                label
+                score
+                confidence
+              }
+              articles {
+                title
+                description
+                url
+                publishedAt
+                source
+                sentiment {
+                  label
+                  score
+                  confidence
+                }
+              }
+              totalArticles
+              sentimentBreakdown {
+                positive
+                negative
+                neutral
+                positivePercentage
+                negativePercentage
+                neutralPercentage
+              }
+              lastUpdated
+            }
+          }
+        `,
+        variables: {
+          ticker: ticker,
+        },
+      });
+
+      if (response.data.data?.getSentiment) {
+        setSentimentData(response.data.data.getSentiment);
+      } else {
+        throw new Error("Failed to fetch sentiment data");
+      }
+    } catch (error) {
+      console.error("Error fetching sentiment data:", error);
+      setError(error.message || "Failed to fetch sentiment analysis");
+      
+      // Fallback to mock data for development
+      const mockSentimentData = {
+        ticker: ticker,
+        overallSentiment: {
+          label: "neutral",
+          score: 0.5,
+          confidence: 0.5,
+        },
+        articles: [],
+        totalArticles: 0,
+        sentimentBreakdown: {
+          positive: 0,
+          negative: 0,
+          neutral: 0,
+          positivePercentage: 0,
+          negativePercentage: 0,
+          neutralPercentage: 0,
+        },
+        lastUpdated: new Date().toISOString(),
+      };
+      setSentimentData(mockSentimentData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getSentimentColor = (label) => {
     switch (label) {
@@ -84,13 +116,55 @@ const SentimentDashboard = ({ ticker, onBack }) => {
     }
   };
 
-  if (!sentimentData) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading sentiment data...</p>
+            <p className="text-gray-600">Analyzing sentiment for {ticker}...</p>
+            <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <button
+              onClick={onBack}
+              className="text-blue-600 hover:text-blue-800 mb-4 flex items-center mx-auto"
+            >
+              ← Back to Stock Dashboard
+            </button>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-red-800 mb-2">
+                Error Loading Sentiment Analysis
+              </h2>
+              <p className="text-red-600 mb-4">{error}</p>
+              <button
+                onClick={fetchSentimentData}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!sentimentData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <p className="text-gray-600">No sentiment data available</p>
           </div>
         </div>
       </div>
@@ -107,7 +181,7 @@ const SentimentDashboard = ({ ticker, onBack }) => {
               onClick={onBack}
               className="text-blue-600 hover:text-blue-800 mb-2 flex items-center"
             >
-              ← Back to Search
+              ← Back to Stock Dashboard
             </button>
             <h1 className="text-3xl font-bold text-gray-900">
               Sentiment Analysis: {sentimentData.ticker}
@@ -195,49 +269,58 @@ const SentimentDashboard = ({ ticker, onBack }) => {
           <h2 className="text-xl font-semibold mb-4">
             Recent Articles ({sentimentData.totalArticles})
           </h2>
-          <div className="space-y-4">
-            {sentimentData.articles.map((article, index) => (
-              <div
-                key={index}
-                className="border-b border-gray-200 pb-4 last:border-b-0"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      <a
-                        href={article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-blue-600"
+          {sentimentData.articles.length > 0 ? (
+            <div className="space-y-4">
+              {sentimentData.articles.map((article, index) => (
+                <div
+                  key={index}
+                  className="border-b border-gray-200 pb-4 last:border-b-0"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-blue-600"
+                        >
+                          {article.title}
+                        </a>
+                      </h3>
+                      <p className="text-gray-600 mb-2">{article.description}</p>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span>{article.source}</span>
+                        <span>
+                          {new Date(article.publishedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ml-4 text-right">
+                      <div
+                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getSentimentColor(
+                          article.sentiment.label
+                        )}`}
                       >
-                        {article.title}
-                      </a>
-                    </h3>
-                    <p className="text-gray-600 mb-2">{article.description}</p>
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>{article.source}</span>
-                      <span>
-                        {new Date(article.publishedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="ml-4 text-right">
-                    <div
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getSentimentColor(
-                        article.sentiment.label
-                      )}`}
-                    >
-                      {article.sentiment.label.charAt(0).toUpperCase() +
-                        article.sentiment.label.slice(1)}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {(article.sentiment.score * 100).toFixed(1)}%
+                        {article.sentiment.label.charAt(0).toUpperCase() +
+                          article.sentiment.label.slice(1)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {(article.sentiment.score * 100).toFixed(1)}%
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p className="text-lg mb-2">📰 No recent articles found</p>
+              <p className="text-sm">
+                Try searching for a different stock or check back later
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Placeholder for Charts */}
