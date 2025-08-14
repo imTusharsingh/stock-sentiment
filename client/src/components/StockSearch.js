@@ -8,31 +8,12 @@ const StockSearch = ({ onStockSelect, setIsLoading }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    (() => {
-      let timeoutId;
-      return (searchQuery) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          if (searchQuery.trim().length >= 2) {
-            performSearch(searchQuery);
-          } else {
-            setSuggestions([]);
-            setShowSuggestions(false);
-          }
-        }, 300);
-      };
-    })(),
-    []
-  );
-
   // Perform search via GraphQL API
-  const performSearch = async (searchQuery) => {
+  const performSearch = useCallback(async (searchQuery) => {
     try {
       setIsSearching(true);
 
-      const response = await axios.post("http://localhost:4000/graphql", {
+      const response = await axios.post("/graphql", {
         query: `
           query GetStockSuggestions($query: String!, $limit: Int!) {
             getStockSuggestions(query: $query, limit: $limit) {
@@ -65,7 +46,24 @@ const StockSearch = ({ onStockSelect, setIsLoading }) => {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    (searchQuery) => {
+      const timeoutId = setTimeout(() => {
+        if (searchQuery.trim().length >= 2) {
+          performSearch(searchQuery);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    },
+    [performSearch]
+  );
 
   // Mock suggestions for development (remove in production)
   const getMockSuggestions = (searchQuery) => {

@@ -1,6 +1,8 @@
 const { gql } = require("graphql-tag");
 
 const typeDefs = gql`
+  scalar Date
+
   type Stock {
     id: ID!
     ticker: String!
@@ -56,6 +58,33 @@ const typeDefs = gql`
     neutralPercentage: Float!
   }
 
+  # User and Authentication Types
+  type User {
+    id: ID!
+    email: String!
+    name: String!
+    favorites: [Favorite!]!
+    createdAt: Date!
+    lastLogin: Date!
+  }
+
+  type Favorite {
+    ticker: String!
+    name: String
+    addedAt: Date!
+  }
+
+  type AuthPayload {
+    user: User!
+    token: String!
+  }
+
+  type FavoriteOperationResult {
+    success: Boolean!
+    message: String!
+    favorites: [Favorite!]!
+  }
+
   type Query {
     # Stock Search and Suggestions
     getStockSuggestions(query: String!, limit: Int = 10): StockSearchResult!
@@ -66,6 +95,10 @@ const typeDefs = gql`
     getSentiment(ticker: String!, dateRange: DateRangeInput): SentimentResult!
     getSentimentHistory(ticker: String!, days: Int = 7): [SentimentResult!]!
 
+    # User and Favorites
+    me: User
+    getFavorites: [Favorite!]!
+
     # Health check
     health: String!
   }
@@ -75,7 +108,26 @@ const typeDefs = gql`
     to: String
   }
 
+  input RegisterInput {
+    email: String!
+    password: String!
+    name: String!
+  }
+
+  input LoginInput {
+    email: String!
+    password: String!
+  }
+
   type Mutation {
+    # Authentication
+    register(input: RegisterInput!): AuthPayload!
+    login(input: LoginInput!): AuthPayload!
+
+    # Favorites Management
+    addFavorite(ticker: String!, name: String): FavoriteOperationResult!
+    removeFavorite(ticker: String!): FavoriteOperationResult!
+
     # Placeholder for future mutations
     _: Boolean
   }

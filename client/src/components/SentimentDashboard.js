@@ -58,25 +58,7 @@ const SentimentDashboard = ({ ticker, onBack }) => {
 
     // TODO: Replace with actual API call
     // fetchSentimentData();
-  }, [ticker]);
-
-  const fetchSentimentData = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // TODO: Implement actual GraphQL query
-      // const response = await client.query({
-      //   query: GET_SENTIMENT,
-      //   variables: { ticker }
-      // });
-      // setSentimentData(response.data.getSentiment);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [ticker, mockSentimentData]);
 
   const getSentimentColor = (label) => {
     switch (label) {
