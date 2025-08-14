@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import StockSearch from "./components/StockSearch";
 import StockDashboard from "./components/StockDashboard";
 import SentimentDashboard from "./components/SentimentDashboard";
+import VisualizationDashboard from "./components/VisualizationDashboard";
 import Header from "./components/Header";
 import FavoritesPanel from "./components/FavoritesPanel";
 import "./App.css";
 
 function App() {
   const [selectedStock, setSelectedStock] = useState(null);
-  const [currentView, setCurrentView] = useState("search"); // 'search', 'stock', 'sentiment'
+  const [currentView, setCurrentView] = useState("search"); // 'search', 'stock', 'sentiment', 'visualization'
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [favoritesRefreshTrigger, setFavoritesRefreshTrigger] = useState(0);
@@ -53,6 +54,10 @@ function App() {
 
   const handleBackToStock = () => {
     setCurrentView("stock");
+  };
+
+  const handleViewVisualization = () => {
+    setCurrentView("visualization");
   };
 
   const handleAddFavorite = async (ticker, name) => {
@@ -109,6 +114,7 @@ function App() {
             stock={selectedStock}
             onBackToSearch={handleBackToSearch}
             onViewSentiment={handleViewSentiment}
+            onViewVisualization={handleViewVisualization}
             onAddFavorite={handleAddFavorite}
             onFavoritesChange={() =>
               setFavoritesRefreshTrigger((prev) => prev + 1)
@@ -123,6 +129,14 @@ function App() {
           <SentimentDashboard
             ticker={selectedStock.ticker}
             onBack={handleBackToStock}
+          />
+        );
+      case "visualization":
+        return (
+          <VisualizationDashboard
+            stock={selectedStock}
+            onBackToStock={handleBackToStock}
+            user={user}
           />
         );
       default:
