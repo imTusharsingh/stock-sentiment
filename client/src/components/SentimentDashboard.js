@@ -63,7 +63,7 @@ const SentimentDashboard = ({ ticker, onBack }) => {
     } catch (error) {
       console.error("Error fetching sentiment data:", error);
       setError(error.message || "Failed to fetch sentiment analysis");
-      
+
       // Fallback to mock data for development
       const mockSentimentData = {
         ticker: ticker,
@@ -123,7 +123,9 @@ const SentimentDashboard = ({ ticker, onBack }) => {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Analyzing sentiment for {ticker}...</p>
-            <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+            <p className="text-sm text-gray-500 mt-2">
+              This may take a few moments
+            </p>
           </div>
         </div>
       </div>
@@ -288,7 +290,9 @@ const SentimentDashboard = ({ ticker, onBack }) => {
                           {article.title}
                         </a>
                       </h3>
-                      <p className="text-gray-600 mb-2">{article.description}</p>
+                      <p className="text-gray-600 mb-2">
+                        {article.description}
+                      </p>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         <span>{article.source}</span>
                         <span>

@@ -13,12 +13,14 @@ The **Sentiment Analysis Processing** feature is now implemented and ready for t
 ## 🔑 Required API Keys
 
 ### 1. GNews API Key (Free Tier: 100 requests/day)
+
 1. Go to [https://gnews.io/](https://gnews.io/)
 2. Sign up for a free account
 3. Get your API key from the dashboard
 4. **Rate Limit**: 100 requests per day (sufficient for testing)
 
 ### 2. Hugging Face API Key (Free Tier: 1,000 requests/month)
+
 1. Go to [https://huggingface.co/](https://huggingface.co/)
 2. Sign up for a free account
 3. Go to Settings → Access Tokens
@@ -28,6 +30,7 @@ The **Sentiment Analysis Processing** feature is now implemented and ready for t
 ## 🔧 Environment Setup
 
 ### Step 1: Create .env File
+
 Create a `server/.env` file with your API keys:
 
 ```env
@@ -59,7 +62,9 @@ JWT_EXPIRES_IN=7d
 ```
 
 ### Step 2: Verify Dependencies
+
 All required packages are already installed:
+
 - `@huggingface/inference` - Hugging Face API client
 - `natural` - Text preprocessing
 - `axios` - HTTP client for GNews API
@@ -67,12 +72,14 @@ All required packages are already installed:
 ## 🧪 Testing the Feature
 
 ### Backend Testing
+
 ```bash
 cd server
 node test/test-sentiment.js
 ```
 
 Expected output:
+
 ```
 🚀 Starting Sentiment Analysis Feature Tests...
 
@@ -102,7 +109,9 @@ Expected output:
 ```
 
 ### Frontend Testing
+
 1. Start the development servers:
+
    ```bash
    pnpm dev
    ```
@@ -122,21 +131,25 @@ Expected output:
 ## 🔍 How It Works
 
 ### 1. News Fetching
+
 - **API**: GNews API with query `${ticker} stock India`
 - **Filters**: English language, India country, max 20 articles
 - **Rate Limit**: 100 requests/day (free tier)
 
 ### 2. Sentiment Analysis
+
 - **Model**: `ProsusAI/finbert` (99% F1 score on financial text)
 - **Processing**: Text preprocessing, tokenization, sentiment classification
 - **Output**: Positive/Negative/Neutral with confidence scores
 
 ### 3. Data Aggregation
+
 - **Weighted Scoring**: Newer articles get higher weight
 - **Overall Sentiment**: Aggregated from all articles
 - **Breakdown**: Count and percentage of each sentiment type
 
 ### 4. Caching
+
 - **Redis Cache**: Results cached for 1 hour
 - **Performance**: Avoids repeated API calls
 - **Fallback**: Returns neutral sentiment if APIs fail
@@ -146,27 +159,33 @@ Expected output:
 ### Common Issues
 
 #### 1. "Failed to fetch news articles"
+
 - **Cause**: GNews API key missing or invalid
 - **Solution**: Verify `GNEWS_API_KEY` in `.env` file
 - **Check**: GNews dashboard for API key status
 
 #### 2. "Failed to analyze sentiment"
+
 - **Cause**: Hugging Face API key missing or invalid
 - **Solution**: Verify `HUGGINGFACE_API_KEY` in `.env` file
 - **Check**: Hugging Face settings for token validity
 
 #### 3. "No articles found"
+
 - **Cause**: No recent news for the stock ticker
 - **Solution**: Try different stocks or check GNews API limits
 - **Alternative**: Use company name instead of ticker
 
 #### 4. Rate Limit Exceeded
+
 - **GNews**: 100 requests/day limit
 - **Hugging Face**: 1,000 requests/month limit
 - **Solution**: Wait for reset or upgrade to paid plans
 
 ### Debug Mode
+
 Enable detailed logging by setting:
+
 ```env
 NODE_ENV=development
 DEBUG=sentiment:*
@@ -175,11 +194,13 @@ DEBUG=sentiment:*
 ## 📊 Performance Metrics
 
 ### Response Times
+
 - **Cached Results**: < 100ms
 - **Fresh Analysis**: 2-5 seconds (depends on article count)
 - **API Limits**: GNews (100/day), HF (1,000/month)
 
 ### Accuracy
+
 - **FinBERT Model**: 99% F1 score on financial text
 - **Fallback**: Neutral sentiment if analysis fails
 - **Confidence**: Score-based confidence levels
@@ -187,11 +208,13 @@ DEBUG=sentiment:*
 ## 🎯 Next Steps
 
 ### Feature 3: Stock Price Integration
+
 - Integrate Yahoo Finance API for stock prices
 - Calculate price-sentiment correlations
 - Add price charts to sentiment dashboard
 
 ### Feature 4: Visualization Dashboard
+
 - Add Chart.js for interactive charts
 - Implement word clouds for key terms
 - Create sentiment vs price trend visualizations
@@ -208,6 +231,7 @@ DEBUG=sentiment:*
 ### GraphQL Queries
 
 #### Get Sentiment Analysis
+
 ```graphql
 query GetSentiment($ticker: String!) {
   getSentiment(ticker: $ticker) {
@@ -244,6 +268,7 @@ query GetSentiment($ticker: String!) {
 ```
 
 #### Get Sentiment History
+
 ```graphql
 query GetSentimentHistory($ticker: String!, $days: Int!) {
   getSentimentHistory(ticker: $ticker, days: $days) {

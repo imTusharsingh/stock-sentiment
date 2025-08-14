@@ -69,9 +69,15 @@ async function testSentimentAnalysis() {
       const sentiment = response.data.data.getSentiment;
       console.log("✅ Sentiment analysis query passed");
       console.log(`📊 Stock: ${sentiment.ticker}`);
-      console.log(`🎯 Overall Sentiment: ${sentiment.overallSentiment.label} (${(sentiment.overallSentiment.score * 100).toFixed(1)}%)`);
+      console.log(
+        `🎯 Overall Sentiment: ${sentiment.overallSentiment.label} (${(
+          sentiment.overallSentiment.score * 100
+        ).toFixed(1)}%)`
+      );
       console.log(`📰 Articles found: ${sentiment.totalArticles}`);
-      console.log(`📈 Sentiment breakdown: ${sentiment.sentimentBreakdown.positive} positive, ${sentiment.sentimentBreakdown.negative} negative, ${sentiment.sentimentBreakdown.neutral} neutral`);
+      console.log(
+        `📈 Sentiment breakdown: ${sentiment.sentimentBreakdown.positive} positive, ${sentiment.sentimentBreakdown.negative} negative, ${sentiment.sentimentBreakdown.neutral} neutral`
+      );
       return true;
     } else {
       console.log("❌ Sentiment analysis query failed:", response.data);
@@ -150,7 +156,9 @@ async function testErrorHandling() {
       console.log(`❌ Expected error: ${response.data.errors[0].message}`);
       return true;
     } else {
-      console.log("❌ Error handling failed - should have returned error for invalid ticker");
+      console.log(
+        "❌ Error handling failed - should have returned error for invalid ticker"
+      );
       return false;
     }
   } catch (error) {
@@ -189,13 +197,17 @@ async function runAllTests() {
   console.log(`❌ Failed: ${failed}/${tests.length}`);
 
   if (failed === 0) {
-    console.log("\n🎉 All tests passed! Sentiment Analysis feature is working correctly.");
+    console.log(
+      "\n🎉 All tests passed! Sentiment Analysis feature is working correctly."
+    );
     console.log("\n🚀 Next steps:");
     console.log("1. Set up your API keys in server/.env file");
     console.log("2. Test with real stocks in the frontend");
     console.log("3. Move to Feature 3: Stock Price Integration");
   } else {
-    console.log("\n⚠️  Some tests failed. Check the errors above and fix them.");
+    console.log(
+      "\n⚠️  Some tests failed. Check the errors above and fix them."
+    );
   }
 }
 
