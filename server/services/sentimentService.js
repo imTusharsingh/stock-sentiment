@@ -64,10 +64,24 @@ class SentimentService {
       const label = this.mapFinBERTLabel(result[0].label);
       const score = result[0].score;
 
+      // Calculate confidence based on score distance from decision boundaries
+      // Higher confidence when score is further from neutral (0.5)
+      let confidence;
+      if (label === "neutral") {
+        // For neutral, confidence is based on how close to 0.5
+        confidence = 1 - Math.abs(score - 0.5) * 2;
+      } else {
+        // For positive/negative, confidence is based on distance from 0.5
+        confidence = Math.abs(score - 0.5) * 2;
+      }
+
+      // Ensure confidence is between 0.1 and 1.0
+      confidence = Math.max(0.1, Math.min(1.0, confidence));
+
       return {
         label,
         score,
-        confidence: score,
+        confidence,
       };
     } catch (error) {
       console.error("Error analyzing sentiment:", error.message);
@@ -145,10 +159,23 @@ class SentimentService {
     if (weightedAverage > 0.6) label = "positive";
     else if (weightedAverage < 0.4) label = "negative";
 
+    // Calculate confidence based on agreement between articles and score consistency
+    const scoreVariance =
+      articles.reduce((sum, article) => {
+        return sum + Math.pow(article.sentiment.score - weightedAverage, 2);
+      }, 0) / articles.length;
+
+    // Lower variance = higher confidence
+    const scoreConsistency = Math.max(0.1, 1 - Math.sqrt(scoreVariance));
+
+    // Combine consistency with overall score strength
+    const confidence =
+      (scoreConsistency + Math.abs(weightedAverage - 0.5) * 2) / 2;
+
     return {
       label,
       score: weightedAverage,
-      confidence: Math.min(weightedAverage + 0.2, 1.0), // Boost confidence slightly
+      confidence: Math.max(0.1, Math.min(1.0, confidence)),
     };
   }
 

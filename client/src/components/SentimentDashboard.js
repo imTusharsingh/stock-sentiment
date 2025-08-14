@@ -139,7 +139,7 @@ const SentimentDashboard = ({ ticker, onBack }) => {
           <div className="text-center">
             <button
               onClick={onBack}
-              className="text-blue-600 hover:text-blue-800 mb-4 flex items-center mx-auto"
+              className="text-blue-600 hover:text-blue-800 mb-2 flex items-center"
             >
               ← Back to Stock Dashboard
             </button>

@@ -3,16 +3,19 @@ import StockSearch from "./components/StockSearch";
 import StockDashboard from "./components/StockDashboard";
 import SentimentDashboard from "./components/SentimentDashboard";
 import VisualizationDashboard from "./components/VisualizationDashboard";
+import DataExport from "./components/DataExport";
 import Header from "./components/Header";
 import FavoritesPanel from "./components/FavoritesPanel";
 import "./App.css";
 
 function App() {
   const [selectedStock, setSelectedStock] = useState(null);
-  const [currentView, setCurrentView] = useState("search"); // 'search', 'stock', 'sentiment', 'visualization'
+  const [currentView, setCurrentView] = useState("search"); // 'search', 'stock', 'sentiment', 'visualization', 'export'
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [favoritesRefreshTrigger, setFavoritesRefreshTrigger] = useState(0);
+  const [sentimentData, setSentimentData] = useState(null);
+  const [priceData, setPriceData] = useState(null);
 
   // Check for existing authentication on app load
   useEffect(() => {
@@ -38,9 +41,99 @@ function App() {
     setUser(null);
   };
 
-  const handleStockSelect = (stock) => {
+  const handleStockSelect = async (stock) => {
     setSelectedStock(stock);
     setCurrentView("stock");
+    
+    // Fetch sentiment and price data for export functionality
+    try {
+      // Fetch sentiment data
+      const sentimentResponse = await fetch("/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            query GetSentiment($ticker: String!) {
+              getSentiment(ticker: $ticker) {
+                overallSentiment {
+                  label
+                  score
+                  confidence
+                }
+                articles {
+                  title
+                  sentiment {
+                    label
+                    score
+                    confidence
+                  }
+                  url
+                  publishedAt
+                }
+                sentimentBreakdown {
+                  positive
+                  negative
+                  neutral
+                  positivePercentage
+                  negativePercentage
+                  neutralPercentage
+                }
+                totalArticles
+                lastUpdated
+              }
+            }
+          `,
+          variables: { ticker: stock.ticker },
+        }),
+      });
+      
+      const sentimentResult = await sentimentResponse.json();
+      if (sentimentResult.data) {
+        setSentimentData(sentimentResult.data.getSentiment);
+      }
+      
+      // Fetch price data
+      const priceResponse = await fetch("/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            query GetStockPrice($ticker: String!) {
+              getStockPrice(ticker: $ticker) {
+                ticker
+                period
+                data {
+                  date
+                  open
+                  high
+                  low
+                  close
+                  volume
+                  dailyReturn
+                }
+                summary {
+                  currentPrice
+                  startPrice
+                  totalReturn
+                  highestPrice
+                  lowestPrice
+                  daysAnalyzed
+                }
+                lastUpdated
+              }
+            }
+          `,
+          variables: { ticker: stock.ticker },
+        }),
+      });
+      
+      const priceResult = await priceResponse.json();
+      if (priceResult.data) {
+        setPriceData(priceResult.data.getStockPrice);
+      }
+    } catch (error) {
+      console.error("Error fetching data for export:", error);
+    }
   };
 
   const handleBackToSearch = () => {
@@ -58,6 +151,10 @@ function App() {
 
   const handleViewVisualization = () => {
     setCurrentView("visualization");
+  };
+
+  const handleViewExport = () => {
+    setCurrentView("export");
   };
 
   const handleAddFavorite = async (ticker, name) => {
@@ -115,6 +212,7 @@ function App() {
             onBackToSearch={handleBackToSearch}
             onViewSentiment={handleViewSentiment}
             onViewVisualization={handleViewVisualization}
+            onViewExport={handleViewExport}
             onAddFavorite={handleAddFavorite}
             onFavoritesChange={() =>
               setFavoritesRefreshTrigger((prev) => prev + 1)
@@ -131,14 +229,24 @@ function App() {
             onBack={handleBackToStock}
           />
         );
-      case "visualization":
-        return (
-          <VisualizationDashboard
-            stock={selectedStock}
-            onBackToStock={handleBackToStock}
-            user={user}
-          />
-        );
+              case "visualization":
+          return (
+            <VisualizationDashboard
+              stock={selectedStock}
+              onBackToStock={handleBackToStock}
+              user={user}
+            />
+          );
+        case "export":
+          return (
+            <DataExport
+              stock={selectedStock}
+              sentimentData={sentimentData}
+              priceData={priceData}
+              user={user}
+              onBackToStock={handleBackToStock}
+            />
+          );
       default:
         return (
           <div className="max-w-4xl mx-auto">
