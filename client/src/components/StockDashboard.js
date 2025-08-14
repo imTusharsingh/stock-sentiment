@@ -6,6 +6,7 @@ const StockDashboard = ({
   onBackToSearch,
   onViewSentiment,
   onViewVisualization,
+  onViewExport,
   onAddFavorite,
   onFavoritesChange,
   isLoading,
@@ -486,6 +487,12 @@ const StockDashboard = ({
               >
                 📈 View Visualizations
               </button>
+              <button
+                onClick={onViewExport}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                📤 Export Data
+              </button>
             </div>
           </div>
 
@@ -508,33 +515,6 @@ const StockDashboard = ({
               <p className="text-sm text-gray-600">
                 Sentiment breakdown & trends
               </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Available Features */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Available Features
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
-              <div className="text-2xl">📊</div>
-              <div>
-                <h4 className="font-medium text-green-900">Charts & Visuals</h4>
-                <p className="text-sm text-green-600">
-                  Interactive charts & word clouds ✅
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className="text-2xl">📤</div>
-              <div>
-                <h4 className="font-medium text-gray-900">Data Export</h4>
-                <p className="text-sm text-gray-600">
-                  CSV & PDF export functionality
-                </p>
-              </div>
             </div>
           </div>
         </div>

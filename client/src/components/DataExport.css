@@ -1,0 +1,85 @@
+/* DataExport.css - Clean and minimal styles */
+.data-export-container {
+  max-width: 4xl;
+  margin: 0 auto;
+}
+
+.data-export-container .bg-white {
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.data-export-container h3 {
+  color: #111827;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.data-export-container h4 {
+  color: #111827;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.data-export-container label {
+  color: #374151;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.data-export-container input[type="radio"] {
+  accent-color: #2563eb;
+  width: 1rem;
+  height: 1rem;
+}
+
+.data-export-container .bg-gray-50 {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.data-export-container .bg-blue-50 {
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+}
+
+.data-export-container .bg-blue-50 h4 {
+  color: #1e40af;
+}
+
+.data-export-container .bg-blue-50 p {
+  color: #1e3a8a;
+}
+
+/* Progress bar */
+.data-export-container .bg-gray-200 {
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.data-export-container .bg-blue-600 {
+  background-color: #2563eb;
+  transition: width 0.3s ease;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .data-export-container {
+    padding: 1rem;
+  }
+
+  .data-export-container .bg-white {
+    padding: 1rem;
+  }
+
+  .data-export-container .space-y-4 > div {
+    margin-bottom: 1rem;
+  }
+
+  .data-export-container .flex.space-x-4 {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
