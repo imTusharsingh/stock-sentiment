@@ -36,10 +36,10 @@ MONGODB_URI=mongodb://localhost:27017/stock-sentiment
 
 # Redis Configuration (Redis Cloud)
 REDIS_USERNAME=default
-REDIS_PASSWORD=qSbFyBO9aV0gHM2C6UCt31XoK0Z3yBca
-REDIS_HOST=redis-16403.c212.ap-south-1-1.ec2.redns.redis-cloud.com
-REDIS_PORT=16403
-REDIS_URL=redis://default:qSbFyBO9aV0gHM2C6UCt31XoK0Z3yBca@redis-16403.c212.ap-south-1-1.ec2.redns.redis-cloud.com:16403
+REDIS_PASSWORD=your-redis-password
+REDIS_HOST=your-redis-host
+REDIS_PORT=your-redis-port
+REDIS_URL=redis://username:password@host:port
 
 # Server Configuration
 PORT=5000
