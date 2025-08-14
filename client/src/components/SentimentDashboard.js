@@ -2,63 +2,61 @@ import React, { useState, useEffect } from "react";
 
 const SentimentDashboard = ({ ticker, onBack }) => {
   const [sentimentData, setSentimentData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Mock data for development (remove when API is ready)
-  const mockSentimentData = {
-    ticker: ticker,
-    overallSentiment: {
-      label: "positive",
-      score: 0.75,
-      confidence: 0.85,
-    },
-    articles: [
-      {
-        title: `${ticker} Reports Strong Q3 Results`,
-        description:
-          "Company exceeds analyst expectations with 25% revenue growth",
-        url: "#",
-        publishedAt: "2024-01-15T10:00:00Z",
-        source: "Financial Express",
-        sentiment: { label: "positive", score: 0.85, confidence: 0.9 },
-      },
-      {
-        title: `${ticker} Expands Operations in South India`,
-        description: "Strategic move to capture growing market opportunities",
-        url: "#",
-        publishedAt: "2024-01-14T15:30:00Z",
-        source: "Business Standard",
-        sentiment: { label: "positive", score: 0.7, confidence: 0.8 },
-      },
-      {
-        title: `${ticker} Faces Supply Chain Challenges`,
-        description: "Company working to resolve temporary disruptions",
-        url: "#",
-        publishedAt: "2024-01-13T09:15:00Z",
-        source: "Economic Times",
-        sentiment: { label: "negative", score: 0.3, confidence: 0.75 },
-      },
-    ],
-    totalArticles: 3,
-    sentimentBreakdown: {
-      positive: 2,
-      negative: 1,
-      neutral: 0,
-      positivePercentage: 66.7,
-      negativePercentage: 33.3,
-      neutralPercentage: 0,
-    },
-    lastUpdated: new Date().toISOString(),
-  };
 
   useEffect(() => {
+    // Mock data for development (remove when API is ready)
+    const mockSentimentData = {
+      ticker: ticker,
+      overallSentiment: {
+        label: "positive",
+        score: 0.75,
+        confidence: 0.85,
+      },
+      articles: [
+        {
+          title: `${ticker} Reports Strong Q3 Results`,
+          description:
+            "Company exceeds analyst expectations with 25% revenue growth",
+          url: "#",
+          publishedAt: "2024-01-15T10:00:00Z",
+          source: "Financial Express",
+          sentiment: { label: "positive", score: 0.85, confidence: 0.9 },
+        },
+        {
+          title: `${ticker} Expands Operations in South India`,
+          description: "Strategic move to capture growing market opportunities",
+          url: "#",
+          publishedAt: "2024-01-14T15:30:00Z",
+          source: "Business Standard",
+          sentiment: { label: "positive", score: 0.7, confidence: 0.8 },
+        },
+        {
+          title: `${ticker} Faces Supply Chain Challenges`,
+          description: "Company working to resolve temporary disruptions",
+          url: "#",
+          publishedAt: "2024-01-13T09:15:00Z",
+          source: "Economic Times",
+          sentiment: { label: "negative", score: 0.3, confidence: 0.75 },
+        },
+      ],
+      totalArticles: 3,
+      sentimentBreakdown: {
+        positive: 2,
+        negative: 1,
+        neutral: 0,
+        positivePercentage: 66.7,
+        negativePercentage: 33.3,
+        neutralPercentage: 0,
+      },
+      lastUpdated: new Date().toISOString(),
+    };
+
     // For now, use mock data
     setSentimentData(mockSentimentData);
 
     // TODO: Replace with actual API call
     // fetchSentimentData();
-  }, [ticker, mockSentimentData]);
+  }, [ticker]);
 
   const getSentimentColor = (label) => {
     switch (label) {
@@ -86,46 +84,17 @@ const SentimentDashboard = ({ ticker, onBack }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="h-64 bg-gray-200 rounded"></div>
-              <div className="h-64 bg-gray-200 rounded"></div>
-              <div className="h-64 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-red-800 mb-2">
-              Error Loading Sentiment Data
-            </h2>
-            <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={onBack}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Go Back
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (!sentimentData) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading sentiment data...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
