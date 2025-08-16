@@ -1,0 +1,53 @@
+{
+  "name": "stock-sentiment-backend",
+  "version": "1.0.0",
+  "description": "Backend service for Indian stock sentiment analysis",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/"
+  },
+  "keywords": [
+    "stock-sentiment",
+    "indian-stocks",
+    "sentiment-analysis",
+    "news-crawling",
+    "mongodb",
+    "redis"
+  ],
+  "author": "Stock Sentiment Team",
+  "license": "MIT",
+  "dependencies": {
+    "@huggingface/inference": "^4.7.1",
+    "cheerio": "^1.1.2",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "mongoose": "^8.17.1",
+    "morgan": "^1.10.1",
+    "puppeteer": "^24.16.2",
+    "redis": "^5.8.1",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "eslint": "^9.33.0",
+    "globals": "^16.3.0",
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2",
+    "supertest": "^7.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
