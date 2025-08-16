@@ -121,3 +121,18 @@ coverage/
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Stock Agent Cache Files
+server/cache/
+server/stock-agent/cache/
+*.csv
+*.meta.json
+
+# Stock Agent Test Files
+server/stock-agent/test-*.js
+server/stock-agent/debug-*.js
+server/stock-agent/check-*.js
+server/stock-agent/verify-*.js
+server/stock-agent/quick-*.js
+server/stock-agent/final-*.js
+server/stock-agent/environment-*.txt
