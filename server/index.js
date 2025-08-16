@@ -42,9 +42,7 @@ async function startServer() {
           code: error.extensions?.code || "INTERNAL_SERVER_ERROR",
         };
       },
-      csrfPrevention: {
-        requestHeaders: ["content-type"],
-      },
+      csrfPrevention: false, // Disable CSRF prevention for development
     });
 
     // Start Apollo Server in standalone mode

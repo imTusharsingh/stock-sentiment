@@ -3,6 +3,7 @@ const { getCache, setCache } = require("../config/redis");
 const SentimentService = require("../services/sentimentService");
 const PriceService = require("../services/priceService");
 const authService = require("../services/authService");
+const stockDataInterface = require("../services/stockDataInterface");
 
 const sentimentService = new SentimentService();
 const priceService = new PriceService();
@@ -27,48 +28,112 @@ const resolvers = {
     // Health check
     health: () => "OK",
 
-    // Get stock suggestions for autocomplete
-    getStockSuggestions: async (_, { query, limit = 10 }) => {
+    // Enhanced stock suggestions with stock agent
+    getStockSuggestions: async (
+      _,
+      {
+        query,
+        limit = 20,
+        exchange,
+        sector,
+        sortBy = "priority",
+        sortOrder = -1,
+      }
+    ) => {
       try {
         // Check cache first
-        const cacheKey = `stock_suggestions:${query}:${limit}`;
+        const cacheKey = `enhanced_stock_suggestions:${query}:${limit}:${
+          exchange || "all"
+        }:${sector || "all"}`;
         const cached = await getCache(cacheKey);
 
         if (cached) {
-          console.log("Returning cached stock suggestions");
+          console.log("Returning cached enhanced stock suggestions");
           return cached;
         }
 
-        // Search in database
-        const searchRegex = new RegExp(query, "i");
+        // Use stock data interface for enhanced search
+        const result = await stockDataInterface.searchStocks(query, limit);
 
-        const suggestions = await Stock.find({
-          $or: [
-            { ticker: searchRegex },
-            { name: searchRegex },
-            { sector: searchRegex },
-          ],
-        })
-          .select("ticker name exchange sector")
-          .limit(limit)
-          .sort({ marketCap: -1, name: 1 });
+        if (!result.success) {
+          throw new Error(result.error || "Search failed");
+        }
 
-        const result = {
-          suggestions,
-          totalCount: suggestions.length,
-        };
-
-        // Cache the result for 1 hour
-        await setCache(cacheKey, result, 3600);
+        // Cache the result for 30 minutes
+        await setCache(cacheKey, result, 1800);
 
         return result;
       } catch (error) {
-        console.error("Error in getStockSuggestions:", error);
-        throw new Error("Failed to fetch stock suggestions");
+        console.error("Error in enhanced getStockSuggestions:", error);
+
+        // Fallback to basic search
+        try {
+          const searchRegex = new RegExp(query, "i");
+          const suggestions = await Stock.find({
+            $or: [
+              { ticker: searchRegex },
+              { name: searchRegex },
+              { sector: searchRegex },
+            ],
+          })
+            .select("ticker name exchange sector")
+            .limit(limit)
+            .sort({ marketCap: -1, name: 1 });
+
+          return {
+            suggestions,
+            totalCount: suggestions.length,
+            query,
+            searchTime: new Date().toISOString(),
+          };
+        } catch (fallbackError) {
+          console.error("Fallback search also failed:", fallbackError);
+          throw new Error("Failed to fetch stock suggestions");
+        }
       }
     },
 
-    // Get specific stock by ticker
+    // Get stock details with stock data interface
+    getStockDetails: async (_, { ticker }) => {
+      try {
+        const result = await stockDataInterface.getStockDetails(ticker);
+
+        if (!result.success) {
+          throw new Error(result.error || "Stock not found");
+        }
+
+        return result.stock;
+      } catch (error) {
+        console.error("Error in getStockDetails:", error);
+        throw error;
+      }
+    },
+
+    // Stock data interface status
+    getStockDataStatus: async () => {
+      try {
+        return stockDataInterface.getStatus();
+      } catch (error) {
+        console.error("Error getting stock data status:", error);
+        throw new Error("Failed to get stock data status");
+      }
+    },
+
+    // Sync stock data
+    syncStockData: async (_, { forceSync = false }) => {
+      try {
+        const result = await stockDataInterface.syncStockData(forceSync);
+        return result;
+      } catch (error) {
+        console.error("Error syncing stock data:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    },
+
+    // Get specific stock by ticker (existing)
     getStockByTicker: async (_, { ticker }) => {
       try {
         const stock = await Stock.findOne({
@@ -126,8 +191,10 @@ const resolvers = {
           dateRange
         );
 
-        // Cache the result for 1 hour
-        await setCache(cacheKey, sentimentResult, 3600);
+        // Only cache successful results
+        if (!sentimentResult.error) {
+          await setCache(cacheKey, sentimentResult, 3600);
+        }
 
         return sentimentResult;
       } catch (error) {
@@ -175,8 +242,10 @@ const resolvers = {
         // For now, return single result (in future, we can implement daily tracking)
         const history = [sentimentResult];
 
-        // Cache the result for 1 hour
-        await setCache(cacheKey, history, 3600);
+        // Only cache successful results
+        if (history.length > 0 && !history[0].error) {
+          await setCache(cacheKey, history, 3600);
+        }
 
         return history;
       } catch (error) {
@@ -271,6 +340,20 @@ const resolvers = {
   },
 
   Mutation: {
+    // Stock Data Management
+    forceStockDataRefresh: async () => {
+      try {
+        const result = await stockDataInterface.syncStockData(true); // Force sync
+        return result;
+      } catch (error) {
+        console.error("Error forcing stock data refresh:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    },
+
     // User registration
     register: async (_, { input }) => {
       try {

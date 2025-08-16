@@ -15,10 +15,38 @@ class MongoDBService extends EventEmitter {
         process.env.MONGODB_URI ||
         "mongodb://localhost:27017/stock-agent",
       options: {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        maxPoolSize: config.maxPoolSize || 10,
-        serverSelectionTimeoutMS: config.serverSelectionTimeoutMS || 5000,
+        // Connection pool settings
+        maxPoolSize: config.maxPoolSize || 50, // Increased for bulk operations
+        minPoolSize: config.minPoolSize || 5, // Minimum connections
+        maxIdleTimeMS: config.maxIdleTimeMS || 30000, // Close idle connections
+        serverSelectionTimeoutMS: config.serverSelectionTimeoutMS || 10000,
+        socketTimeoutMS: config.socketTimeoutMS || 45000, // Socket timeout
+        connectTimeoutMS: config.connectTimeoutMS || 10000, // Connection timeout
+
+        // Buffer settings (MongoDB 6+ compatible)
+        bufferCommands: false, // Disable buffering
+
+        // Write concern for bulk operations
+        writeConcern: {
+          w: 1, // Wait for primary
+          j: false, // Don't wait for journal
+          wtimeout: 10000, // Write timeout
+        },
+
+        // Read preferences
+        readPreference: "primary",
+
+        // Retry settings
+        retryWrites: true,
+        retryReads: true,
+
+        // Heartbeat settings
+        heartbeatFrequencyMS: 10000,
+
+        // Compaction settings
+        compressors: ["zlib"],
+        zlibCompressionLevel: 6,
+
         ...config.options,
       },
     };

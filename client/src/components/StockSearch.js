@@ -1,18 +1,20 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 
-const StockSearch = ({ onStockSelect, setIsLoading }) => {
+const StockSearch = ({ onStockSelect }) => {
+  const inputRef = useRef(null);
+  const firstSuggestionRef = useRef(null);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchStats, setSearchStats] = useState(null);
+  const debounceRef = useRef(null);
 
-  // Perform search via GraphQL API
-  const performSearch = useCallback(async (searchQuery) => {
+  // Basic search fallback
+  const performBasicSearch = useCallback(async (searchQuery) => {
     try {
-      setIsSearching(true);
-
       const response = await axios.post("/graphql", {
         query: `
           query GetStockSuggestions($query: String!, $limit: Int!) {
@@ -27,160 +29,182 @@ const StockSearch = ({ onStockSelect, setIsLoading }) => {
             }
           }
         `,
-        variables: {
-          query: searchQuery,
-          limit: 10,
-        },
+        variables: { query: searchQuery, limit: 10 },
       });
 
       if (response.data.data?.getStockSuggestions) {
-        setSuggestions(response.data.data.getStockSuggestions.suggestions);
+        const result = response.data.data.getStockSuggestions;
+        setSuggestions(result.suggestions);
+        setSearchStats({
+          totalCount: result.totalCount,
+          searchTime: new Date().toISOString(),
+          query: searchQuery,
+        });
         setShowSuggestions(true);
       }
     } catch (error) {
-      console.error("Search error:", error);
-      // Fallback to mock data for development
-      const mockSuggestions = getMockSuggestions(searchQuery);
-      setSuggestions(mockSuggestions);
-      setShowSuggestions(true);
-    } finally {
-      setIsSearching(false);
+      console.error("Basic search failed:", error);
     }
   }, []);
 
-  // Debounced search function
+  // Enhanced search
+  const performEnhancedSearch = useCallback(
+    async (searchQuery) => {
+      try {
+        setIsSearching(true);
+
+        const response = await axios.post("/graphql", {
+          query: `
+            query GetEnhancedStockSuggestions($query: String!, $limit: Int, $sortBy: String, $sortOrder: Int) {
+              getStockSuggestions(query: $query, limit: $limit, sortBy: $sortBy, sortOrder: $sortOrder) {
+                suggestions {
+                  ticker
+                  name
+                  exchange
+                  sector
+                  industry
+                  marketCap
+                  isin
+                  priority
+                }
+                totalCount
+                query
+                searchTime
+              }
+            }
+          `,
+          variables: {
+            query: searchQuery,
+            limit: 20,
+            sortBy: "priority",
+            sortOrder: -1,
+          },
+        });
+
+        if (response.data.data?.getStockSuggestions) {
+          const result = response.data.data.getStockSuggestions;
+          setSuggestions(result.suggestions);
+          setSearchStats({
+            totalCount: result.totalCount,
+            searchTime: result.searchTime,
+            query: result.query,
+          });
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        console.error("Enhanced search error:", error);
+        await performBasicSearch(searchQuery);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [performBasicSearch]
+  );
+
+  // Debounced search
   const debouncedSearch = useCallback(
     (searchQuery) => {
-      const timeoutId = setTimeout(() => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
         if (searchQuery.trim().length >= 2) {
-          performSearch(searchQuery);
+          performEnhancedSearch(searchQuery);
         } else {
           setSuggestions([]);
           setShowSuggestions(false);
+          setSearchStats(null);
         }
-      }, 300);
-
-      return () => clearTimeout(timeoutId);
+      }, 500);
     },
-    [performSearch]
+    [performEnhancedSearch]
   );
 
-  // Mock suggestions for development (remove in production)
-  const getMockSuggestions = (searchQuery) => {
-    const allStocks = [
-      {
-        ticker: "RELIANCE",
-        name: "Reliance Industries Limited",
-        exchange: "NSE",
-        sector: "Oil & Gas",
-      },
-      {
-        ticker: "TCS",
-        name: "Tata Consultancy Services Limited",
-        exchange: "NSE",
-        sector: "Information Technology",
-      },
-      {
-        ticker: "HDFCBANK",
-        name: "HDFC Bank Limited",
-        exchange: "NSE",
-        sector: "Banking",
-      },
-      {
-        ticker: "INFY",
-        name: "Infosys Limited",
-        exchange: "NSE",
-        sector: "Information Technology",
-      },
-      {
-        ticker: "ICICIBANK",
-        name: "ICICI Bank Limited",
-        exchange: "NSE",
-        sector: "Banking",
-      },
-      {
-        ticker: "HINDUNILVR",
-        name: "Hindustan Unilever Limited",
-        exchange: "NSE",
-        sector: "FMCG",
-      },
-      { ticker: "ITC", name: "ITC Limited", exchange: "NSE", sector: "FMCG" },
-      {
-        ticker: "SBIN",
-        name: "State Bank of India",
-        exchange: "NSE",
-        sector: "Banking",
-      },
-      {
-        ticker: "BHARTIARTL",
-        name: "Bharti Airtel Limited",
-        exchange: "NSE",
-        sector: "Telecommunications",
-      },
-      {
-        ticker: "AXISBANK",
-        name: "Axis Bank Limited",
-        exchange: "NSE",
-        sector: "Banking",
-      },
-    ];
-
-    const query = searchQuery.toLowerCase();
-    return allStocks
-      .filter(
-        (stock) =>
-          stock.ticker.toLowerCase().includes(query) ||
-          stock.name.toLowerCase().includes(query) ||
-          stock.sector.toLowerCase().includes(query)
-      )
-      .slice(0, 10);
-  };
-
-  // Handle input change
+  // Input change
   const handleInputChange = (e) => {
     const value = e.target.value;
     setQuery(value);
-    setSelectedIndex(-1);
     debouncedSearch(value);
   };
 
-  // Handle keyboard navigation
-  const handleKeyDown = (e) => {
+  // Move selection
+  const handleItemKeyDown = (e, index, stock) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((prev) =>
-        prev < suggestions.length - 1 ? prev + 1 : prev
-      );
+      const next = document.getElementById(`suggestion-${index + 1}`);
+      if (next) {
+        next.focus();
+        setSelectedIndex(index + 1);
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+      if (index === 0) {
+        inputRef.current?.focus();
+        setSelectedIndex(-1);
+      } else {
+        const prev = document.getElementById(`suggestion-${index - 1}`);
+        if (prev) {
+          prev.focus();
+          setSelectedIndex(index - 1);
+        }
+      }
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (selectedIndex >= 0 && suggestions[selectedIndex]) {
-        handleStockSelect(suggestions[selectedIndex]);
-      }
+      handleStockSelect(stock);
     } else if (e.key === "Escape") {
       setShowSuggestions(false);
       setSelectedIndex(-1);
+      inputRef.current?.focus();
     }
   };
 
-  // Handle stock selection
+  // Keyboard navigation from input
+  const handleKeyDown = (e) => {
+    if (e.key === "ArrowDown" && showSuggestions && suggestions.length > 0) {
+      e.preventDefault();
+      firstSuggestionRef.current?.focus();
+      setSelectedIndex(0);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setSelectedIndex(-1);
+      inputRef.current?.focus();
+    }
+  };
+
+  // Stock select
   const handleStockSelect = (stock) => {
+    onStockSelect(stock);
     setQuery(stock.ticker);
     setShowSuggestions(false);
     setSelectedIndex(-1);
-    onStockSelect(stock);
+    setSearchStats(null);
+    inputRef.current?.focus();
   };
 
-  // Handle input focus
-  const handleInputFocus = () => {
-    if (suggestions.length > 0) {
-      setShowSuggestions(true);
+  // Focus on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Auto-focus first suggestion when suggestions appear (only if there are results)
+  useEffect(() => {
+    if (
+      showSuggestions &&
+      suggestions.length > 0 &&
+      firstSuggestionRef.current
+    ) {
+      // Small delay to ensure DOM is fully updated
+      const timer = setTimeout(() => {
+        firstSuggestionRef.current.focus();
+        setSelectedIndex(0);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else if (showSuggestions && suggestions.length === 0) {
+      // If no results, keep focus on input
+      setSelectedIndex(-1);
+      inputRef.current?.focus();
     }
-  };
+  }, [showSuggestions, suggestions.length]);
 
-  // Handle click outside
+  // Click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest(".stock-search-container")) {
@@ -188,123 +212,113 @@ const StockSearch = ({ onStockSelect, setIsLoading }) => {
         setSelectedIndex(-1);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="stock-search-container max-w-2xl mx-auto">
+    <div className="stock-search-container relative w-full max-w-2xl mx-auto">
       <div className="relative">
-        <div className="relative">
-          <input
-            type="text"
-            value={query}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onFocus={handleInputFocus}
-            placeholder="Search for Indian stocks (e.g., RELIANCE, TCS, HDFCBANK)..."
-            className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition-colors shadow-sm"
-            autoComplete="off"
-          />
+        <input
+          ref={inputRef}
+          autoFocus
+          type="text"
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Search for stocks (e.g., RELIANCE, TCS, HDFC)..."
+          className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors duration-200"
+          disabled={isSearching}
+        />
 
-          {isSearching && (
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            </div>
-          )}
-
-          {!isSearching && query && (
-            <button
-              onClick={() => setQuery("")}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Search Suggestions Dropdown */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-80 overflow-y-auto">
-            {suggestions.map((stock, index) => (
-              <div
-                key={stock.ticker}
-                onClick={() => handleStockSelect(stock)}
-                className={`px-4 py-3 cursor-pointer transition-colors ${
-                  index === selectedIndex
-                    ? "bg-blue-50 border-l-4 border-blue-500"
-                    : "hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <span className="font-semibold text-gray-900">
-                        {stock.ticker}
-                      </span>
-                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                        {stock.exchange}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">{stock.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{stock.sector}</p>
-                  </div>
-                  <div className="text-right">
-                    <svg
-                      className="w-5 h-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {isSearching && (
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
           </div>
         )}
+      </div>
 
-        {/* No results message */}
-        {showSuggestions &&
-          suggestions.length === 0 &&
-          query.length >= 2 &&
-          !isSearching && (
-            <div className="absolute w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-4">
-              <p className="text-gray-500 text-center">
-                No stocks found matching "{query}"
-              </p>
-            </div>
+      {/* Info text - only show when input is empty */}
+      {query.length === 0 && (
+        <div className="mt-1 text-xs text-gray-500 text-left">
+          Enter at least 2 characters to search
+        </div>
+      )}
+
+      {searchStats && (
+        <div className="mt-2 text-sm text-gray-600">
+          <span className="font-medium">{searchStats.totalCount}</span> stocks
+          found{" "}
+          {searchStats.searchTime && (
+            <span className="ml-2 text-gray-500">
+              at {new Date(searchStats.searchTime).toLocaleTimeString()}
+            </span>
           )}
-      </div>
+        </div>
+      )}
 
-      {/* Search tips */}
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500">
-          💡 Try searching by company name, ticker symbol, or sector
-        </p>
-        <p className="text-xs text-gray-400 mt-2">
-          Popular: RELIANCE, TCS, HDFCBANK, INFY, ICICIBANK
-        </p>
-      </div>
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+          {suggestions.map((stock, index) => (
+            <div
+              key={`${stock.ticker}-${index}`}
+              id={`suggestion-${index}`}
+              ref={index === 0 ? firstSuggestionRef : null}
+              tabIndex={0}
+              onKeyDown={(e) => handleItemKeyDown(e, index, stock)}
+              onMouseDown={() => handleStockSelect(stock)}
+              onMouseEnter={() => setSelectedIndex(index)}
+              className={`px-4 py-3 cursor-pointer transition-colors duration-150 ${
+                index === selectedIndex
+                  ? "bg-blue-100 border-l-4 border-blue-500"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold text-lg text-gray-800">
+                      {stock.ticker}
+                    </span>
+                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      {stock.exchange}
+                    </span>
+                    {stock.priority && (
+                      <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                        Priority {stock.priority}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">{stock.name}</div>
+                  <div className="flex items-center space-x-4 mt-1 text-xs text-gray-500">
+                    {stock.sector && <span>📊 {stock.sector}</span>}
+                    {stock.industry && <span>🏭 {stock.industry}</span>}
+                    {stock.marketCap && (
+                      <span>
+                        💰 ₹{(stock.marketCap / 10000000).toFixed(1)} Cr
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {stock.isin && (
+                  <div className="text-right text-xs text-gray-400">
+                    ISIN: {stock.isin}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showSuggestions &&
+        suggestions.length === 0 &&
+        query.length >= 2 &&
+        !isSearching && (
+          <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+            No stocks found for "{query}"
+          </div>
+        )}
     </div>
   );
 };

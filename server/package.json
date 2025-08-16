@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest"
+    "test": "jest",
+    "init-stock-agent": "node scripts/init-stock-agent.js",
+    "sync-stocks": "node scripts/init-stock-agent.js"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",

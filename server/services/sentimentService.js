@@ -7,18 +7,47 @@ class SentimentService {
     this.hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
     this.gnewsApiKey = process.env.GNEWS_API_KEY;
     this.model = "ProsusAI/finbert"; // Financial sentiment model
+
+    // Rate limiting and retry settings
+    this.requestDelay = 1000; // 1 second between requests
+    this.maxRetries = 3;
+    this.lastRequestTime = 0;
+
+    // Rate limiting and retry settings
+    this.requestDelay = 1000; // 1 second between requests
+    this.maxRetries = 3;
+    this.lastRequestTime = 0;
   }
 
   /**
-   * Fetch news articles for a given stock ticker
+   * Add delay between API requests to avoid rate limiting
+   */
+  async addRequestDelay() {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+
+    if (timeSinceLastRequest < this.requestDelay) {
+      const delay = this.requestDelay - timeSinceLastRequest;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    this.lastRequestTime = Date.now();
+  }
+
+  /**
+   * Fetch news articles for a given stock ticker with better error handling
    */
   async fetchNews(ticker, dateRange = null) {
     try {
+      // Add delay to avoid rate limiting
+      await this.addRequestDelay();
+
       const query = `${ticker} stock India`;
       let url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(
         query
       )}&token=${this.gnewsApiKey}&lang=en&country=in&max=20`;
 
+      // Add date range if provided
       if (dateRange?.from) {
         url += `&from=${dateRange.from}`;
       }
@@ -26,10 +55,11 @@ class SentimentService {
         url += `&to=${dateRange.to}`;
       }
 
+      console.log(`🔍 Fetching news for ${ticker}...`);
       const response = await axios.get(url);
 
       if (response.data.articles) {
-        return response.data.articles.map((article) => ({
+        const articles = response.data.articles.map((article) => ({
           title: article.title,
           description: article.description,
           url: article.url,
@@ -37,12 +67,25 @@ class SentimentService {
           source: article.source.name,
           content: `${article.title} ${article.description}`.trim(),
         }));
+
+        console.log(`   📰 Found ${articles.length} articles for ${ticker}`);
+        return articles;
       }
 
       return [];
     } catch (error) {
-      console.error("Error fetching news:", error.message);
-      throw new Error("Failed to fetch news articles");
+      if (error.response?.status === 429) {
+        console.error(`⚠️ Rate limited for ${ticker}, waiting 5 seconds...`);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        throw new Error(`Rate limited for ${ticker}, please try again later`);
+      } else if (error.response?.status === 401) {
+        throw new Error("Invalid GNews API key");
+      } else if (error.response?.status === 403) {
+        throw new Error("GNews API quota exceeded");
+      } else {
+        console.error(`Error fetching news for ${ticker}:`, error.message);
+        throw new Error(`Failed to fetch news for ${ticker}: ${error.message}`);
+      }
     }
   }
 
@@ -206,14 +249,17 @@ class SentimentService {
   }
 
   /**
-   * Main method to get sentiment analysis for a stock
+   * Main method to get sentiment analysis for a stock with better error handling
    */
   async getSentiment(ticker, dateRange = null) {
     try {
+      console.log(`🚀 Starting sentiment analysis for ${ticker}...`);
+
       // Fetch news articles
       const articles = await this.fetchNews(ticker, dateRange);
 
       if (articles.length === 0) {
+        console.log(`⚠️ No news articles found for ${ticker}`);
         return {
           ticker,
           overallSentiment: { label: "neutral", score: 0.5, confidence: 0.5 },
@@ -228,19 +274,43 @@ class SentimentService {
             neutralPercentage: 0,
           },
           lastUpdated: new Date().toISOString(),
+          message: "No recent news articles found for this stock",
         };
       }
 
-      // Analyze sentiment for each article
-      const articlesWithSentiment = await Promise.all(
-        articles.map(async (article) => {
+      console.log(`📊 Analyzing sentiment for ${articles.length} articles...`);
+
+      // Analyze sentiment for each article with delay to avoid rate limiting
+      const articlesWithSentiment = [];
+      for (let i = 0; i < articles.length; i++) {
+        const article = articles[i];
+        try {
+          // Add delay between sentiment analysis requests
+          if (i > 0) {
+            await this.addRequestDelay();
+          }
+
           const sentiment = await this.analyzeArticleSentiment(article.content);
-          return {
+          articlesWithSentiment.push({
             ...article,
             sentiment,
-          };
-        })
-      );
+          });
+
+          console.log(
+            `   ✅ Article ${i + 1}/${articles.length}: ${sentiment.label}`
+          );
+        } catch (error) {
+          console.error(
+            `   ❌ Failed to analyze article ${i + 1}:`,
+            error.message
+          );
+          // Continue with other articles
+        }
+      }
+
+      if (articlesWithSentiment.length === 0) {
+        throw new Error("Failed to analyze any articles");
+      }
 
       // Calculate overall sentiment and breakdown
       const overallSentiment = this.calculateOverallSentiment(
@@ -250,6 +320,10 @@ class SentimentService {
         articlesWithSentiment
       );
 
+      console.log(
+        `🎯 Sentiment analysis completed for ${ticker}: ${overallSentiment.label}`
+      );
+
       return {
         ticker,
         overallSentiment,
@@ -257,12 +331,29 @@ class SentimentService {
         totalArticles: articlesWithSentiment.length,
         sentimentBreakdown,
         lastUpdated: new Date().toISOString(),
+        message: `Successfully analyzed ${articlesWithSentiment.length} articles`,
       };
     } catch (error) {
-      console.error("Error in getSentiment:", error.message);
-      throw new Error(
-        `Failed to analyze sentiment for ${ticker}: ${error.message}`
-      );
+      console.error(`❌ Error in getSentiment for ${ticker}:`, error.message);
+
+      // Return a more informative error response
+      return {
+        ticker,
+        overallSentiment: { label: "neutral", score: 0.5, confidence: 0.5 },
+        articles: [],
+        totalArticles: 0,
+        sentimentBreakdown: {
+          positive: 0,
+          negative: 0,
+          neutral: 0,
+          positivePercentage: 0,
+          negativePercentage: 0,
+          neutralPercentage: 0,
+        },
+        lastUpdated: new Date().toISOString(),
+        error: error.message,
+        message: `Failed to analyze sentiment: ${error.message}`,
+      };
     }
   }
 }
