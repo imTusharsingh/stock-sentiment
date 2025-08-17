@@ -17,24 +17,32 @@ class ContentExtractionService {
    */
   async extractPageContent(page) {
     try {
-      // eslint-disable-next-line no-undef
+       
       const rawContent = await page.evaluate(() => {
         // Remove script and style elements
+        // eslint-disable-next-line no-undef
         const scripts = document.querySelectorAll('script, style, noscript');
         scripts.forEach(el => el.remove());
 
         // Get main content areas
+        // eslint-disable-next-line no-undef
         const mainContent = document.querySelector('main, article, .content, .article-content, .story-content') || document.body;
         
         return {
+          // eslint-disable-next-line no-undef
           title: document.title || '',
+          // eslint-disable-next-line no-undef
           url: window.location.href,
+           
           content: mainContent.textContent || '',
+           
           html: mainContent.innerHTML || '',
+          // eslint-disable-next-line no-undef
           metaDescription: document.querySelector('meta[name="description"]')?.content || '',
+          // eslint-disable-next-line no-undef
           metaKeywords: document.querySelector('meta[name="keywords"]')?.content || '',
-          publishedDate: this.extractPublishedDate(document),
-          author: this.extractAuthor(document)
+          publishedDate: null, // Will be extracted separately
+          author: null // Will be extracted separately
         };
       });
 
@@ -71,7 +79,6 @@ class ContentExtractionService {
    */
   extractPublishedDate(document) {
     try {
-      // eslint-disable-next-line no-undef
       const dateSelectors = [
         'meta[property="article:published_time"]',
         'meta[name="publish_date"]',
@@ -95,7 +102,7 @@ class ContentExtractionService {
       }
 
       return null;
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -105,7 +112,6 @@ class ContentExtractionService {
    */
   extractAuthor(document) {
     try {
-      // eslint-disable-next-line no-undef
       const authorSelectors = [
         'meta[name="author"]',
         'meta[property="article:author"]',
@@ -125,7 +131,7 @@ class ContentExtractionService {
       }
 
       return null;
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -214,10 +220,12 @@ class ContentExtractionService {
    */
   async extractDataWithSelectors(page, selectors) {
     try {
+       
       const data = await page.evaluate((sel) => {
         const result = {};
         
         for (const [key, selector] of Object.entries(sel)) {
+          // eslint-disable-next-line no-undef
           const element = document.querySelector(selector);
           if (element) {
             result[key] = element.textContent?.trim() || element.getAttribute('content') || '';
@@ -244,17 +252,22 @@ class ContentExtractionService {
    */
   async extractLinks(page, baseUrl) {
     try {
+       
       const links = await page.evaluate((url) => {
+        // eslint-disable-next-line no-undef
         const linkElements = document.querySelectorAll('a[href]');
         const links = [];
         
         linkElements.forEach(link => {
+           
           const href = link.getAttribute('href');
           if (href && !href.startsWith('javascript:') && !href.startsWith('#')) {
             const absoluteUrl = new URL(href, url).href;
             links.push({
+               
               text: link.textContent?.trim() || '',
               url: absoluteUrl,
+               
               title: link.getAttribute('title') || ''
             });
           }

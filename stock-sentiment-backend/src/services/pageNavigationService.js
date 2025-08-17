@@ -94,7 +94,9 @@ class PageNavigationService {
   async scrollPage(page, scrollSteps = 3) {
     try {
       for (let i = 0; i < scrollSteps; i++) {
+         
         await page.evaluate(() => {
+          // eslint-disable-next-line no-undef
           window.scrollBy(0, window.innerHeight);
         });
         await this.delay(1000);
@@ -149,7 +151,7 @@ class PageNavigationService {
   /**
    * Get current URL
    */
-  async getCurrentUrl(page) {
+  getCurrentUrl(page) {
     try {
       return page.url();
     } catch (error) {
