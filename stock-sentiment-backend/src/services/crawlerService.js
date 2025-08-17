@@ -205,7 +205,7 @@ class CrawlerService {
   async extractSearchResults(page, sourceName) {
     try {
       const selectors = this.getSearchResultSelectors(sourceName);
-       
+
       const results = await page.evaluate(sel => {
         const searchResults = [];
 
