@@ -10,12 +10,9 @@ class DatabaseConfig {
     this.uri = process.env.MONGODB_URI;
     this.dbName = process.env.MONGODB_DB_NAME || 'stock_sentiment';
     this.options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      bufferMaxEntries: 0,
       bufferCommands: false,
     };
   }
@@ -40,7 +37,7 @@ class DatabaseConfig {
       console.log(`🔌 Port: ${connection.connection.port}`);
 
       // Handle connection events
-      this.setupEventHandlers(connection);
+      this.setupEventHandlers();
 
       return connection;
     } catch (error) {
@@ -51,29 +48,31 @@ class DatabaseConfig {
 
   /**
    * Setup MongoDB connection event handlers
-   * @param {mongoose.Connection} connection
    */
-  setupEventHandlers(connection) {
-    connection.on('connected', () => {
+  setupEventHandlers() {
+    // Use mongoose.connection for event handlers
+    const mongooseConnection = mongoose.connection;
+
+    mongooseConnection.on('connected', () => {
       console.log('🟢 MongoDB connection established');
     });
 
-    connection.on('error', err => {
+    mongooseConnection.on('error', err => {
       console.error('🔴 MongoDB connection error:', err);
     });
 
-    connection.on('disconnected', () => {
+    mongooseConnection.on('disconnected', () => {
       console.log('🟡 MongoDB connection disconnected');
     });
 
-    connection.on('reconnected', () => {
+    mongooseConnection.on('reconnected', () => {
       console.log('🟢 MongoDB connection reestablished');
     });
 
     // Graceful shutdown
     process.on('SIGINT', async () => {
       try {
-        await connection.close();
+        await mongooseConnection.close();
         console.log('🔄 MongoDB connection closed through app termination');
         // Note: process.exit is necessary for graceful shutdown
         // eslint-disable-next-line no-process-exit

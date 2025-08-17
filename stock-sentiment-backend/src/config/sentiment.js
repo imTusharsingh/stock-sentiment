@@ -268,24 +268,14 @@ class SentimentConfig {
    * @returns {string}
    */
   getSentimentLabel(score) {
-    if (score >= this.scoring.thresholds.veryPositive) {
-      return 'very_positive';
-    }
-    if (score >= this.scoring.thresholds.positive) {
-      return 'positive';
-    }
-    if (score >= this.scoring.thresholds.slightlyPositive) {
+    if (score >= this.scoring.thresholds.veryPositive) return 'very_positive';
+    if (score >= this.scoring.thresholds.positive) return 'positive';
+    if (score >= this.scoring.thresholds.slightlyPositive)
       return 'slightly_positive';
-    }
-    if (score >= this.scoring.thresholds.neutral) {
-      return 'neutral';
-    }
-    if (score >= this.scoring.thresholds.slightlyNegative) {
+    if (score >= this.scoring.thresholds.neutral) return 'neutral';
+    if (score >= this.scoring.thresholds.slightlyNegative)
       return 'slightly_negative';
-    }
-    if (score >= this.scoring.thresholds.negative) {
-      return 'negative';
-    }
+    if (score >= this.scoring.thresholds.negative) return 'negative';
     return 'very_negative';
   }
 

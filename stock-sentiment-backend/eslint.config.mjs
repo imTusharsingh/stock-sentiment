@@ -30,14 +30,21 @@ export default defineConfig([
       'no-debugger': 'error',
 
       // Code quality
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       'no-undef': 'error',
       'no-var': 'error',
       'prefer-const': 'error',
 
       // Best practices
       eqeqeq: ['error', 'always'],
-      curly: ['error', 'all'],
+      curly: 'off', // Changed: allow single-line if without braces
       'no-eval': 'error',
       'no-implied-eval': 'error',
 
@@ -50,7 +57,6 @@ export default defineConfig([
       'require-await': 'error',
 
       // Security
-      'no-implied-eval': 'error',
       'no-new-func': 'error',
     },
   },

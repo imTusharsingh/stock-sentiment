@@ -14,13 +14,19 @@ class RedisConfig {
     this.db = process.env.REDIS_DB || 0;
     this.url = process.env.REDIS_URL || `redis://${this.host}:${this.port}`;
 
-    // Cache TTL configurations
+    // TTL policies for different data types
     this.ttl = {
       sentiment: parseInt(process.env.CACHE_TTL_SENTIMENT) || 900, // 15 minutes
       news: parseInt(process.env.CACHE_TTL_NEWS) || 3600, // 1 hour
       trends1D: parseInt(process.env.CACHE_TTL_TRENDS_1D) || 1800, // 30 minutes
       trends30D: parseInt(process.env.CACHE_TTL_TRENDS_30D) || 7200, // 2 hours
       trends90D: parseInt(process.env.CACHE_TTL_TRENDS_90D) || 21600, // 6 hours
+      stockData: 3600, // 1 hour
+      searchResults: 900, // 15 minutes
+      userSessions: 86400, // 24 hours
+      rateLimits: 60, // 1 minute
+      crawlQueue: 300, // 5 minutes
+      tempData: 300, // 5 minutes
     };
   }
 
