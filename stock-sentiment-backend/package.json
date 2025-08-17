@@ -6,9 +6,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "set NODE_ENV=test&& jest",
+    "test:watch": "set NODE_ENV=test&& jest --watch",
+    "test:coverage": "set NODE_ENV=test&& jest --coverage",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/"

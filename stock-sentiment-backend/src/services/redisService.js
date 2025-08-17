@@ -51,9 +51,13 @@ class RedisService {
       const serializedValue = JSON.stringify(value);
 
       await client.setEx(key, ttl, serializedValue);
-      console.log(`✅ Cached ${key} with TTL ${ttl}s`);
+      if (process.env.NODE_ENV !== 'test') {
+        console.log(`✅ Cached ${key} with TTL ${ttl}s`);
+      }
     } catch (error) {
-      console.error(`❌ Failed to cache ${key}:`, error.message);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(`❌ Failed to cache ${key}:`, error.message);
+      }
       throw error;
     }
   }
@@ -74,7 +78,9 @@ class RedisService {
 
       return JSON.parse(value);
     } catch (error) {
-      console.error(`❌ Failed to get ${key}:`, error.message);
+      if (process.env.NODE_ENV !== 'test') {
+        console.error(`❌ Failed to get ${key}:`, error.message);
+      }
       return null;
     }
   }
